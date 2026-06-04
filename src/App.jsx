@@ -166,7 +166,7 @@ export default function App() {
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
           <div>
-            <div style={{ color: gold, fontSize: "10px", letterSpacing: "3px", textTransform: "uppercase", marginBottom: "5px" }}>
+            <div style={{ color: gold, fontSize: "10px", letterSpacing: "3px", textTransform: "uppercase", marginBottom: "5px", fontWeight: "700", textShadow: "0 0 8px #FFFFFF, 0 0 16px #FFFFFF" }}>
               Portfolio Tracker
             </div>
             <div style={{ color: purple, fontSize: "26px", fontWeight: "700", letterSpacing: "-0.5px", textShadow: "0 0 24px rgba(168,85,247,0.6)" }}>
