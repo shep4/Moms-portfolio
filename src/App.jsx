@@ -4,7 +4,7 @@ const HOLDINGS = [
  {
    ticker: "VUSXX",
    description: "Vanguard Treasury Money Market",
-   quantity: 7500,
+   quantity: 7531.16,
    cost: 7500.10,
    isMoneyMarket: true,
  },
