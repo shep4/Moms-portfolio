@@ -193,7 +193,7 @@ export default function App() {
               {loading ? "UPDATING..." : "↻ REFRESH"}
             </button>
             {lastUpdated && (
-              <div style={{ color: #000000", fontSize: "10px", marginTop: "5px", textShadow: "0 0 8px #00FF88, 0 0 14px #00FF88" }}>
+              <div style={{ color: "#000000", fontSize: "10px", marginTop: "5px", textShadow: "0 0 8px #00FF88, 0 0 14px #00FF88" }}>
                 {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
               </div>
             )}
