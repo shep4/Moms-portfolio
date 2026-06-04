@@ -129,7 +129,7 @@ export default function App() {
         position: "fixed",
         top: 0, left: 0, right: 0, bottom: 0,
         backgroundImage: "url('/sunset.png')",
-        backgroundSize: "contain",
+        backgroundSize: "cover",
         backgroundPosition: "center center",
         backgroundRepeat: "no-repeat",
         opacity: 0.88,
