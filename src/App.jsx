@@ -41,7 +41,8 @@ const fmtPct = (n) => {
 const green = "#00D68F";
 const red = "#FF4D6A";
 const gold = "#F5A623";
-const border = "#151F33";
+const purple = "#A855F7";
+const border = "#1E2A3A";
 const muted = "#3D5068";
 const dimText = "#6B84A0";
 
@@ -101,14 +102,26 @@ export default function App() {
 
   const colorVal = (n) => (n == null ? dimText : n > 0 ? green : n < 0 ? red : dimText);
 
+  const cardStyle = {
+    background: "rgba(10, 14, 26, 0.82)",
+    border: `1px solid ${border}`,
+    borderRadius: "14px",
+    padding: "16px",
+    marginBottom: "10px",
+    backdropFilter: "blur(12px)",
+    WebkitBackdropFilter: "blur(12px)",
+    position: "relative",
+    overflow: "hidden",
+  };
+
   return (
     <div style={{
       minHeight: "100vh",
       fontFamily: "'Courier New', monospace",
       padding: "16px",
+      paddingBottom: "140px",
       boxSizing: "border-box",
       position: "relative",
-      overflow: "hidden"
     }}>
 
       {/* Sunset Background */}
@@ -117,44 +130,45 @@ export default function App() {
         top: 0, left: 0, right: 0, bottom: 0,
         backgroundImage: "url('/sunset.png')",
         backgroundSize: "cover",
-        backgroundPosition: "center",
-        opacity: 0.25,
-        zIndex: 0
+        backgroundPosition: "center top",
+        opacity: 0.55,
+        zIndex: 0,
       }} />
 
-      {/* Dark overlay for readability */}
+      {/* Dark gradient overlay — lighter at top, darker at bottom */}
       <div style={{
         position: "fixed",
         top: 0, left: 0, right: 0, bottom: 0,
-        background: "rgba(7, 11, 20, 0.82)",
-        zIndex: 1
+        background: "linear-gradient(to bottom, rgba(5,8,18,0.55) 0%, rgba(5,8,18,0.80) 60%, rgba(5,8,18,0.95) 100%)",
+        zIndex: 1,
       }} />
 
-      {/* Cardinal sticker */}
+      {/* Cardinal — fixed bottom right, clear of content */}
       <img
         src="/cardinal.png"
-        alt="cardinal"
+        alt=""
         style={{
           position: "fixed",
-          bottom: "20px",
-          right: "16px",
-          width: "110px",
-          opacity: 0.92,
-          zIndex: 2,
-          pointerEvents: "none"
+          bottom: "0px",
+          right: "0px",
+          width: "130px",
+          opacity: 1,
+          zIndex: 10,
+          pointerEvents: "none",
+          filter: "drop-shadow(0 0 12px rgba(168,85,247,0.4))",
         }}
       />
 
-      {/* All content above background */}
-      <div style={{ position: "relative", zIndex: 3 }}>
+      {/* Content */}
+      <div style={{ position: "relative", zIndex: 2 }}>
 
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "18px" }}>
           <div>
-            <div style={{ color: gold, fontSize: "9px", letterSpacing: "3px", textTransform: "uppercase", marginBottom: "3px" }}>
+            <div style={{ color: gold, fontSize: "9px", letterSpacing: "3px", textTransform: "uppercase", marginBottom: "4px" }}>
               Portfolio Tracker
             </div>
-            <div style={{ color: "#F0F4F8", fontSize: "20px", fontWeight: "700", letterSpacing: "-0.5px" }}>
+            <div style={{ color: purple, fontSize: "22px", fontWeight: "700", letterSpacing: "-0.5px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
               Account Overview
             </div>
           </div>
@@ -163,20 +177,21 @@ export default function App() {
               onClick={fetchPrices}
               disabled={loading}
               style={{
-                background: loading ? border : gold + "22",
-                border: `1px solid ${loading ? muted : gold + "55"}`,
-                color: loading ? muted : gold,
-                borderRadius: "6px",
-                padding: "6px 12px",
+                background: loading ? "rgba(30,42,58,0.8)" : "rgba(168,85,247,0.15)",
+                border: `1px solid ${loading ? muted : purple + "88"}`,
+                color: loading ? muted : purple,
+                borderRadius: "8px",
+                padding: "7px 14px",
                 fontSize: "10px",
                 letterSpacing: "1px",
                 cursor: loading ? "not-allowed" : "pointer",
-                fontFamily: "'Courier New', monospace"
+                fontFamily: "'Courier New', monospace",
+                backdropFilter: "blur(8px)",
               }}>
               {loading ? "UPDATING..." : "↻ REFRESH"}
             </button>
             {lastUpdated && (
-              <div style={{ color: muted, fontSize: "9px", marginTop: "4px" }}>
+              <div style={{ color: dimText, fontSize: "9px", marginTop: "4px" }}>
                 {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
               </div>
             )}
@@ -184,37 +199,35 @@ export default function App() {
         </div>
 
         {error && (
-          <div style={{ background: red + "15", border: `1px solid ${red}33`, borderRadius: "6px", padding: "8px 12px", marginBottom: "12px" }}>
+          <div style={{ background: red + "15", border: `1px solid ${red}33`, borderRadius: "8px", padding: "8px 12px", marginBottom: "12px" }}>
             <span style={{ color: red, fontSize: "10px" }}>⚠ {error}</span>
           </div>
         )}
 
         {/* Total Value Hero */}
         <div style={{
-          background: "rgba(13, 19, 33, 0.85)",
-          border: `1px solid ${border}`,
-          borderRadius: "12px",
-          padding: "16px",
-          marginBottom: "12px",
-          position: "relative",
-          overflow: "hidden",
-          backdropFilter: "blur(8px)"
+          ...cardStyle,
+          background: "rgba(10, 14, 26, 0.88)",
+          border: `1px solid ${purple}33`,
+          marginBottom: "14px",
         }}>
-          <div style={{ position: "absolute", top: 0, right: 0, width: "120px", height: "120px", background: gold + "08", borderRadius: "50%", transform: "translate(30px, -30px)" }} />
-          <div style={{ color: dimText, fontSize: "9px", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "4px" }}>Total Portfolio Value</div>
-          <div style={{ color: "#F0F4F8", fontSize: "32px", fontWeight: "700", letterSpacing: "-1px", marginBottom: "6px" }}>
+          <div style={{ position: "absolute", top: 0, right: 0, width: "150px", height: "150px", background: purple + "08", borderRadius: "50%", transform: "translate(40px, -40px)" }} />
+          <div style={{ color: dimText, fontSize: "9px", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>
+            Total Portfolio Value
+          </div>
+          <div style={{ color: "#F0F4F8", fontSize: "36px", fontWeight: "700", letterSpacing: "-1px", marginBottom: "8px" }}>
             ${fmt(totalValue)}
           </div>
-          <div style={{ display: "flex", gap: "16px" }}>
+          <div style={{ display: "flex", gap: "20px" }}>
             <div>
               <span style={{ color: dimText, fontSize: "10px" }}>Day: </span>
-              <span style={{ color: colorVal(totalDayGL), fontSize: "12px", fontWeight: "700" }}>
+              <span style={{ color: colorVal(totalDayGL), fontSize: "13px", fontWeight: "700" }}>
                 {fmtDollar(totalDayGL)}
               </span>
             </div>
             <div>
               <span style={{ color: dimText, fontSize: "10px" }}>Total: </span>
-              <span style={{ color: colorVal(totalGL), fontSize: "12px", fontWeight: "700" }}>
+              <span style={{ color: colorVal(totalGL), fontSize: "13px", fontWeight: "700" }}>
                 {fmtDollar(totalGL)} ({fmtPct(totalGLPct)})
               </span>
             </div>
@@ -223,55 +236,55 @@ export default function App() {
 
         {/* Holdings Cards */}
         {rows.map((r) => (
-          <div key={r.ticker} style={{
-            background: "rgba(13, 19, 33, 0.85)",
-            border: `1px solid ${border}`,
-            borderRadius: "10px",
-            padding: "13px",
-            marginBottom: "8px",
-            position: "relative",
-            overflow: "hidden",
-            backdropFilter: "blur(8px)"
-          }}>
+          <div key={r.ticker} style={cardStyle}>
             <div style={{
               position: "absolute", left: 0, top: 0, bottom: 0, width: "3px",
-              background: r.isMoneyMarket ? gold : r.ticker === "VOO" ? "#3B82F6" : "#8B5CF6"
+              background: r.isMoneyMarket ? gold : r.ticker === "VOO" ? "#3B82F6" : purple,
+              borderRadius: "14px 0 0 14px",
             }} />
-            <div style={{ paddingLeft: "8px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+            <div style={{ paddingLeft: "10px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <span style={{ color: "#F0F4F8", fontSize: "16px", fontWeight: "700" }}>{r.ticker}</span>
                     {!r.isMoneyMarket && r.dayChangePct != null && (
                       <span style={{
-                        background: colorVal(r.dayChangePct) + "20",
+                        background: colorVal(r.dayChangePct) + "25",
                         color: colorVal(r.dayChangePct),
                         fontSize: "10px",
                         fontWeight: "700",
-                        padding: "2px 7px",
-                        borderRadius: "4px"
+                        padding: "2px 8px",
+                        borderRadius: "5px",
+                        border: `1px solid ${colorVal(r.dayChangePct)}33`,
                       }}>
                         {fmtPct(r.dayChangePct)}
                       </span>
                     )}
                     {r.isMoneyMarket && (
-                      <span style={{ background: gold + "20", color: gold, fontSize: "9px", padding: "2px 7px", borderRadius: "4px" }}>
+                      <span style={{
+                        background: gold + "20",
+                        color: gold,
+                        fontSize: "9px",
+                        padding: "2px 8px",
+                        borderRadius: "5px",
+                        border: `1px solid ${gold}33`,
+                      }}>
                         MONEY MKT
                       </span>
                     )}
                   </div>
-                  <div style={{ color: dimText, fontSize: "10px", marginTop: "2px" }}>{r.description}</div>
+                  <div style={{ color: dimText, fontSize: "10px", marginTop: "3px" }}>{r.description}</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ color: "#F0F4F8", fontSize: "18px", fontWeight: "700" }}>${fmt(r.price)}</div>
+                  <div style={{ color: "#F0F4F8", fontSize: "20px", fontWeight: "700" }}>${fmt(r.price)}</div>
                   {!r.isMoneyMarket && (
-                    <div style={{ color: colorVal(r.dayChangePer), fontSize: "11px" }}>
+                    <div style={{ color: colorVal(r.dayChangePer), fontSize: "11px", marginTop: "2px" }}>
                       {r.dayChangePer != null ? (r.dayChangePer >= 0 ? "+" : "") + fmtDollar(r.dayChangePer) : "—"}
                     </div>
                   )}
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", borderTop: `1px solid ${border}`, paddingTop: "8px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", borderTop: `1px solid ${border}`, paddingTop: "10px" }}>
                 {[
                   { label: "Value", value: fmtDollar(r.value), color: "#F0F4F8" },
                   { label: "Quantity", value: r.isMoneyMarket ? fmt(r.quantity, 2) : fmt(r.quantity, 4), color: dimText },
@@ -281,7 +294,7 @@ export default function App() {
                   { label: "Total G/L %", value: fmtPct(r.totalGainLossPct), color: colorVal(r.totalGainLossPct) },
                 ].map((cell) => (
                   <div key={cell.label}>
-                    <div style={{ color: muted, fontSize: "8px", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: "2px" }}>{cell.label}</div>
+                    <div style={{ color: muted, fontSize: "8px", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: "3px" }}>{cell.label}</div>
                     <div style={{ color: cell.color, fontSize: "12px", fontWeight: "600" }}>{cell.value}</div>
                   </div>
                 ))}
@@ -292,17 +305,14 @@ export default function App() {
 
         {/* Totals */}
         <div style={{
-          background: "rgba(10, 16, 32, 0.88)",
-          border: `1px solid ${gold}33`,
-          borderRadius: "10px",
-          padding: "13px",
-          marginTop: "4px",
-          backdropFilter: "blur(8px)"
+          ...cardStyle,
+          background: "rgba(10, 14, 26, 0.90)",
+          border: `1px solid ${purple}44`,
         }}>
-          <div style={{ color: gold, fontSize: "9px", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "10px" }}>
+          <div style={{ color: purple, fontSize: "9px", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "12px", fontWeight: "700" }}>
             Portfolio Totals
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
             {[
               { label: "Total Value", value: fmtDollar(totalValue), color: "#F0F4F8" },
               { label: "Total Cost", value: fmtDollar(totalCost), color: dimText },
@@ -312,15 +322,16 @@ export default function App() {
               { label: "Total G/L %", value: fmtPct(totalGLPct), color: colorVal(totalGLPct) },
             ].map((cell) => (
               <div key={cell.label}>
-                <div style={{ color: muted, fontSize: "8px", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: "2px" }}>{cell.label}</div>
+                <div style={{ color: muted, fontSize: "8px", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: "3px" }}>{cell.label}</div>
                 <div style={{ color: cell.color, fontSize: "13px", fontWeight: "700" }}>{cell.value}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ textAlign: "center", marginTop: "12px", paddingBottom: "80px" }}>
-          <div style={{ color: border, fontSize: "9px", letterSpacing: "1px" }}>
+        {/* Footer */}
+        <div style={{ textAlign: "center", marginTop: "14px" }}>
+          <div style={{ color: purple, fontSize: "9px", letterSpacing: "1.5px", opacity: 0.7 }}>
             AUTO-REFRESHES EVERY 60 SECONDS DURING MARKET HOURS
           </div>
         </div>
