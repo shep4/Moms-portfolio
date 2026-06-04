@@ -112,7 +112,7 @@ export default function App() {
            Portfolio Tracker
          </div>
          <div style={{ color: "#F0F4F8", fontSize: "20px", fontWeight: "700", letterSpacing: "-0.5px" }}>
-           Mom's Chase Account
+           Account Overview
          </div>
        </div>
        <div style={{ textAlign: "right" }}>
