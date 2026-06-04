@@ -115,7 +115,7 @@ export default function App() {
       <div style={{
         position: "fixed",
         top: 0, left: 0, right: 0, bottom: 0,
-        backgroundImage: "url('/public/sunset.png')",
+        backgroundImage: "url('/sunset.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         opacity: 0.25,
@@ -132,7 +132,7 @@ export default function App() {
 
       {/* Cardinal sticker */}
       <img
-        src="/public/cardinal.png"
+        src="/cardinal.png"
         alt="cardinal"
         style={{
           position: "fixed",
