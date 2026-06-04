@@ -1,3 +1,4 @@
+cat > /mnt/user-data/outputs/App.jsx << 'EOF'
 import { useState, useEffect, useCallback } from "react";
 
 const HOLDINGS = [
@@ -6,7 +7,6 @@ const HOLDINGS = [
     description: "Vanguard Treasury Money Market",
     quantity: 7500,
     cost: 7500.10,
-    staticPrice: 1.00,
     isMoneyMarket: true,
   },
   {
@@ -14,7 +14,6 @@ const HOLDINGS = [
     description: "Vanguard S&P 500 ETF",
     quantity: 7.2262,
     cost: 5000.00,
-    staticPrice: null,
     isMoneyMarket: false,
   },
   {
@@ -22,7 +21,6 @@ const HOLDINGS = [
     description: "Invesco Nasdaq 100 ETF",
     quantity: 8.23882,
     cost: 2500.00,
-    staticPrice: null,
     isMoneyMarket: false,
   },
 ];
@@ -65,19 +63,11 @@ export default function App() {
     try {
       const results = {};
       for (const ticker of ["VOO", "QQQM"]) {
-        const res = await fetch(
-          `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=2d`,
-          { headers: { "Accept": "application/json" } }
-        );
+        const res = await fetch(`/api/quote?ticker=${ticker}`);
         if (!res.ok) throw new Error(`Failed to fetch ${ticker}`);
         const data = await res.json();
-        const meta = data?.chart?.result?.[0]?.meta;
-        if (!meta) throw new Error(`No data for ${ticker}`);
-        const price = meta.regularMarketPrice ?? meta.previousClose;
-        const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? price;
-        const change = price - prevClose;
-        const changePct = prevClose ? (change / prevClose) * 100 : 0;
-        results[ticker] = { price, prevClose, change, changePct };
+        if (data.error) throw new Error(data.error);
+        results[ticker] = data;
       }
       setPrices(results);
       setLastUpdated(new Date());
@@ -94,18 +84,16 @@ export default function App() {
     return () => clearInterval(id);
   }, [fetchPrices]);
 
-  // Build rows
   const rows = HOLDINGS.map((h) => {
     const priceData = h.isMoneyMarket ? null : prices[h.ticker];
     const price = h.isMoneyMarket ? 1.00 : (priceData?.price ?? null);
-    const prevClose = h.isMoneyMarket ? 1.00 : (priceData?.prevClose ?? null);
     const value = price != null ? price * h.quantity : null;
     const dayChangePer = h.isMoneyMarket ? 0 : (priceData?.change ?? null);
     const dayChangePct = h.isMoneyMarket ? 0 : (priceData?.changePct ?? null);
     const dayGainLoss = h.isMoneyMarket ? 0 : (dayChangePer != null ? dayChangePer * h.quantity : null);
     const totalGainLoss = value != null ? value - h.cost : null;
     const totalGainLossPct = totalGainLoss != null ? (totalGainLoss / h.cost) * 100 : null;
-    return { ...h, price, prevClose, value, dayChangePer, dayChangePct, dayGainLoss, totalGainLoss, totalGainLossPct };
+    return { ...h, price, value, dayChangePer, dayChangePct, dayGainLoss, totalGainLoss, totalGainLossPct };
   });
 
   const totalCost = HOLDINGS.reduce((s, h) => s + h.cost, 0);
@@ -192,7 +180,7 @@ export default function App() {
       </div>
 
       {/* Holdings Cards */}
-      {rows.map((r, i) => (
+      {rows.map((r) => (
         <div key={r.ticker} style={{
           background: card,
           border: `1px solid ${border}`,
@@ -202,14 +190,12 @@ export default function App() {
           position: "relative",
           overflow: "hidden"
         }}>
-          {/* Left accent bar */}
           <div style={{
             position: "absolute", left: 0, top: 0, bottom: 0, width: "3px",
             background: r.isMoneyMarket ? gold : r.ticker === "VOO" ? "#3B82F6" : "#8B5CF6"
           }} />
 
           <div style={{ paddingLeft: "8px" }}>
-            {/* Row 1: Ticker + Price */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -244,7 +230,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Row 2: Stats Grid */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", borderTop: `1px solid ${border}`, paddingTop: "8px" }}>
               {[
                 { label: "Value", value: fmtDollar(r.value), color: "#F0F4F8" },
@@ -264,7 +249,7 @@ export default function App() {
         </div>
       ))}
 
-      {/* Totals Row */}
+      {/* Totals */}
       <div style={{
         background: "#0A1020",
         border: `1px solid ${gold}33`,
@@ -292,7 +277,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Footer */}
       <div style={{ textAlign: "center", marginTop: "12px" }}>
         <div style={{ color: border, fontSize: "9px", letterSpacing: "1px" }}>
           AUTO-REFRESHES EVERY 60 SECONDS DURING MARKET HOURS
@@ -301,3 +285,5 @@ export default function App() {
     </div>
   );
 }
+EOF
+echo "done"
