@@ -180,7 +180,8 @@ export default function App() {
               style={{
                 background: loading ? "rgba(30,42,58,0.8)" : "rgba(168,85,247,0.18)",
                 border: `1px solid ${loading ? muted : purple + "99"}`,
-                color: loading ? muted : "#000000",
+                color: loading ? muted : "#FFFFFF",
+                fontWeight: "700",
                 textShadow: loading ? "none" : "0 0 8px #00FF88, 0 0 16px #00FF88",
                 borderRadius: "8px",
                 padding: "8px 16px",
@@ -193,7 +194,7 @@ export default function App() {
               {loading ? "UPDATING..." : "↻ REFRESH"}
             </button>
             {lastUpdated && (
-              <div style={{ color: "#000000", fontSize: "10px", marginTop: "5px", textShadow: "0 0 8px #00FF88, 0 0 14px #00FF88" }}>
+              <div style={{ color: "#FFFFFF", fontWeight: "700", fontSize: "10px", marginTop: "5px", textShadow: "0 0 8px #00FF88, 0 0 14px #00FF88" }}>
                 {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
               </div>
             )}
