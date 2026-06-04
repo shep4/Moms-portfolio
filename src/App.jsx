@@ -5,7 +5,7 @@ const HOLDINGS = [
   ticker: "VUSXX",
   description: "Vanguard Treasury Money Market",
   quantity: (() => {
-    const startValue = 7500.10;
+    const startValue = 7531.16;
     const dailyRate = 0.043 / 365;
     const startDate = new Date("2026-06-04");
     const today = new Date();
