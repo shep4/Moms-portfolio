@@ -1,19 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 
 const HOLDINGS = [
- {
-  ticker: "VUSXX",
-  description: "Vanguard Treasury Money Market",
-  quantity: (() => {
-    const startValue = 7531.16;
-    const dailyRate = 0.043 / 365;
-    const startDate = new Date("2026-06-04");
-    const today = new Date();
-    const days = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-    return startValue * Math.pow(1 + dailyRate, days);
-  })(),
-  cost: 7500.10,
-  isMoneyMarket: true,
+{
+  ticker: "VUSXX",
+  description: "Vanguard Treasury Money Market",
+  quantity: 7531.16 * Math.pow(1 + (0.043 / 365), Math.floor((Date.now() - new Date("2026-06-04").getTime()) / 86400000)),
+  cost: 7500.10,
+  isMoneyMarket: true,
 },
  {
    ticker: "VOO",
