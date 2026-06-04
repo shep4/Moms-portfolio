@@ -129,9 +129,10 @@ export default function App() {
         position: "fixed",
         top: 0, left: 0, right: 0, bottom: 0,
         backgroundImage: "url('/sunset.png')",
-        backgroundSize: "cover",
-        backgroundPosition: "center top",
-        opacity: 0.75,
+        backgroundSize: "contain",
+        backgroundPosition: "center center",
+        backgroundRepeat: "no-repeat",
+        opacity: 0.88,
         zIndex: 0,
       }} />
 
@@ -139,7 +140,7 @@ export default function App() {
       <div style={{
         position: "fixed",
         top: 0, left: 0, right: 0, bottom: 0,
-        background: "linear-gradient(to bottom, rgba(5,8,18,0.35) 0%, rgba(5,8,18,0.65) 50%, rgba(5,8,18,0.88) 100%)",
+        background: "linear-gradient(to bottom, rgba(5,8,18,0.20) 0%, rgba(5,8,18,0.45) 50%, rgba(5,8,18,0.75) 100%)",
         zIndex: 1,
       }} />
 
