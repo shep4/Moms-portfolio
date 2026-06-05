@@ -7,6 +7,7 @@ const HOLDINGS = [
     quantity: 7531.16 * Math.pow(1 + (0.043 / 365), Math.floor((Date.now() - new Date("2026-06-04").getTime()) / 86400000)),
     cost: 7500.10,
     isMoneyMarket: true,
+    entryPrice: 1.00,
   },
   {
     ticker: "VOO",
@@ -14,6 +15,7 @@ const HOLDINGS = [
     quantity: 7.2262,
     cost: 5000.00,
     isMoneyMarket: false,
+    entryPrice: 691.94,
   },
   {
     ticker: "QQQM",
@@ -21,7 +23,21 @@ const HOLDINGS = [
     quantity: 8.23882,
     cost: 2500.00,
     isMoneyMarket: false,
+    entryPrice: 303.41,
   },
+];
+
+const PROJECTIONS = [
+  { label: "Conservative", rate: 0.07, color: "#60A5FA" },
+  { label: "Base Case", rate: 0.10, color: "#00D68F" },
+  { label: "Bull Case", rate: 0.15, color: "#F5A623" },
+];
+
+const SCENARIOS = [
+  { label: "Gap Fill (-340 NQ pts)", vooAdj: -0.018, qqqmAdj: -0.028 },
+  { label: "5% Correction", vooAdj: -0.05, qqqmAdj: -0.05 },
+  { label: "10% Correction", vooAdj: -0.10, qqqmAdj: -0.10 },
+  { label: "15% Correction", vooAdj: -0.15, qqqmAdj: -0.15 },
 ];
 
 const fmt = (n, digits = 2) =>
@@ -54,6 +70,7 @@ export default function App() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [intelOpen, setIntelOpen] = useState(false);
 
   const fetchPrices = useCallback(async () => {
     setLoading(true);
@@ -91,7 +108,8 @@ export default function App() {
     const dayGainLoss = h.isMoneyMarket ? 0 : (dayChangePer != null ? dayChangePer * h.quantity : null);
     const totalGainLoss = value != null ? value - h.cost : null;
     const totalGainLossPct = totalGainLoss != null ? (totalGainLoss / h.cost) * 100 : null;
-    return { ...h, price, value, dayChangePer, dayChangePct, dayGainLoss, totalGainLoss, totalGainLossPct };
+    const fromEntry = price != null ? ((price - h.entryPrice) / h.entryPrice) * 100 : null;
+    return { ...h, price, value, dayChangePer, dayChangePct, dayGainLoss, totalGainLoss, totalGainLossPct, fromEntry };
   });
 
   const totalCost = HOLDINGS.reduce((s, h) => s + h.cost, 0);
@@ -101,6 +119,32 @@ export default function App() {
   const totalGLPct = (totalGL / totalCost) * 100;
 
   const colorVal = (n) => (n == null ? dimText : n > 0 ? green : n < 0 ? red : dimText);
+
+  // Intelligence calculations
+  const vooPrice = prices.VOO.price;
+  const qqqmPrice = prices.QQQM.price;
+  const vusxxValue = rows[0].value ?? 7531.16;
+
+  const scenarioResults = SCENARIOS.map(s => {
+    const vooScenario = vooPrice * (1 + s.vooAdj);
+    const qqqmScenario = qqqmPrice * (1 + s.qqqmAdj);
+    const portfolioValue = vusxxValue + (vooScenario * 7.2262) + (qqqmScenario * 8.23882);
+    const drawdown = portfolioValue - totalValue;
+    return { ...s, vooScenario, qqqmScenario, portfolioValue, drawdown };
+  });
+
+  const projectionResults = PROJECTIONS.map(p => {
+    const equityBase = totalValue - vusxxValue;
+    const vusxxProjected7 = vusxxValue * Math.pow(1 + 0.043, 7);
+    const vusxxProjected10 = vusxxValue * Math.pow(1 + 0.043, 10);
+    const equity7 = equityBase * Math.pow(1 + p.rate, 7);
+    const equity10 = equityBase * Math.pow(1 + p.rate, 10);
+    return {
+      ...p,
+      year7: vusxxProjected7 + equity7,
+      year10: vusxxProjected10 + equity10,
+    };
+  });
 
   const cardStyle = {
     background: "rgba(8, 12, 24, 0.80)",
@@ -131,12 +175,11 @@ export default function App() {
         backgroundImage: "url('/sunset.png')",
         backgroundSize: "cover",
         backgroundPosition: "center center",
-        backgroundRepeat: "no-repeat",
-        opacity: 0.88,
+        backgroundRepeat: "no-repeat",
+        opacity: 0.85,
         zIndex: 0,
       }} />
 
-      {/* Overlay — lighter so sunset shows through */}
       <div style={{
         position: "fixed",
         top: 0, left: 0, right: 0, bottom: 0,
@@ -181,8 +224,8 @@ export default function App() {
                 background: loading ? "rgba(30,42,58,0.8)" : "rgba(168,85,247,0.18)",
                 border: `1px solid ${loading ? muted : purple + "99"}`,
                 color: loading ? muted : "#FFFFFF",
-                fontWeight: "700",
-                textShadow: loading ? "none" : "0 0 8px #00FF88, 0 0 16px #00FF88",
+                fontWeight: "700",
+                textShadow: loading ? "none" : "0 0 8px #00FF88, 0 0 16px #00FF88",
                 borderRadius: "8px",
                 padding: "8px 16px",
                 fontSize: "11px",
@@ -277,9 +320,22 @@ export default function App() {
                     )}
                   </div>
                   <div style={{ color: dimText, fontSize: "13px", marginTop: "4px" }}>{r.description}</div>
+                  {!r.isMoneyMarket && r.fromEntry != null && (
+                    <div style={{ marginTop: "4px" }}>
+                      <span style={{ color: dimText, fontSize: "11px" }}>From entry: </span>
+                      <span style={{ color: colorVal(r.fromEntry), fontSize: "11px", fontWeight: "700" }}>
+                        {fmtPct(r.fromEntry)}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ color: "#F0F4F8", fontSize: "22px", fontWeight: "700" }}>${fmt(r.price)}</div>
+                  {!r.isMoneyMarket && (
+                    <div style={{ color: dimText, fontSize: "11px", marginTop: "2px" }}>
+                      Entry: ${fmt(r.entryPrice)}
+                    </div>
+                  )}
                   {!r.isMoneyMarket && (
                     <div style={{ color: colorVal(r.dayChangePer), fontSize: "13px", marginTop: "3px" }}>
                       {r.dayChangePer != null ? (r.dayChangePer >= 0 ? "+" : "") + fmtDollar(r.dayChangePer) : "—"}
@@ -331,6 +387,114 @@ export default function App() {
             ))}
           </div>
         </div>
+
+        {/* Portfolio Intelligence — Collapsible */}
+        <div style={{
+          ...cardStyle,
+          background: "rgba(8, 12, 24, 0.90)",
+          border: `1px solid ${gold}44`,
+          cursor: "pointer",
+        }} onClick={() => setIntelOpen(!intelOpen)}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ color: gold, fontSize: "11px", letterSpacing: "2px", textTransform: "uppercase", fontWeight: "700" }}>
+              ⚡ Portfolio Intelligence
+            </div>
+            <div style={{ color: gold, fontSize: "16px" }}>{intelOpen ? "▲" : "▼"}</div>
+          </div>
+          {!intelOpen && (
+            <div style={{ color: dimText, fontSize: "11px", marginTop: "6px" }}>
+              Scenarios · Projections · Entry analysis — tap to expand
+            </div>
+          )}
+        </div>
+
+        {intelOpen && (
+          <>
+            {/* Entry Analysis */}
+            <div style={{ ...cardStyle, border: `1px solid ${gold}33` }}>
+              <div style={{ color: gold, fontSize: "10px", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "14px", fontWeight: "700" }}>
+                Entry Analysis
+              </div>
+              {rows.filter(r => !r.isMoneyMarket).map(r => (
+                <div key={r.ticker} style={{ marginBottom: "14px", paddingBottom: "14px", borderBottom: `1px solid ${border}` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                    <span style={{ color: "#F0F4F8", fontSize: "16px", fontWeight: "700" }}>{r.ticker}</span>
+                    <span style={{ color: colorVal(r.fromEntry), fontSize: "14px", fontWeight: "700" }}>
+                      {fmtPct(r.fromEntry)} from entry
+                    </span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+                    {[
+                      { label: "Entry Price", value: `$${fmt(r.entryPrice)}`, color: dimText },
+                      { label: "Current", value: `$${fmt(r.price)}`, color: "#F0F4F8" },
+                      { label: "Breakeven", value: r.fromEntry != null ? (r.fromEntry >= 0 ? "✅ Above" : "⚠ Below") : "—", color: r.fromEntry >= 0 ? green : red },
+                    ].map(cell => (
+                      <div key={cell.label}>
+                        <div style={{ color: muted, fontSize: "9px", textTransform: "uppercase", marginBottom: "3px" }}>{cell.label}</div>
+                        <div style={{ color: cell.color, fontSize: "13px", fontWeight: "600" }}>{cell.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Downside Scenarios */}
+            <div style={{ ...cardStyle, border: `1px solid ${red}33` }}>
+              <div style={{ color: red, fontSize: "10px", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "14px", fontWeight: "700" }}>
+                Downside Scenarios
+              </div>
+              {scenarioResults.map((s, i) => (
+                <div key={i} style={{ marginBottom: i < scenarioResults.length - 1 ? "14px" : 0, paddingBottom: i < scenarioResults.length - 1 ? "14px" : 0, borderBottom: i < scenarioResults.length - 1 ? `1px solid ${border}` : "none" }}>
+                  <div style={{ color: "#F0F4F8", fontSize: "13px", fontWeight: "700", marginBottom: "8px" }}>{s.label}</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "8px" }}>
+                    {[
+                      { label: "VOO", value: `$${fmt(s.vooScenario)}`, color: red },
+                      { label: "QQQM", value: `$${fmt(s.qqqmScenario)}`, color: red },
+                      { label: "Portfolio", value: fmtDollar(s.portfolioValue), color: "#F0F4F8" },
+                      { label: "Drawdown", value: fmtDollar(s.drawdown), color: red },
+                    ].map(cell => (
+                      <div key={cell.label}>
+                        <div style={{ color: muted, fontSize: "9px", textTransform: "uppercase", marginBottom: "3px" }}>{cell.label}</div>
+                        <div style={{ color: cell.color, fontSize: "12px", fontWeight: "600" }}>{cell.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* 7-10 Year Projections */}
+            <div style={{ ...cardStyle, border: `1px solid ${green}33` }}>
+              <div style={{ color: green, fontSize: "10px", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px", fontWeight: "700" }}>
+                7–10 Year Projections
+              </div>
+              <div style={{ color: dimText, fontSize: "10px", marginBottom: "14px" }}>
+                Equity positions at rate shown · VUSXX at 4.3% · Starting from ${fmt(totalValue)}
+              </div>
+              {projectionResults.map((p, i) => (
+                <div key={i} style={{ marginBottom: i < projectionResults.length - 1 ? "14px" : 0, paddingBottom: i < projectionResults.length - 1 ? "14px" : 0, borderBottom: i < projectionResults.length - 1 ? `1px solid ${border}` : "none" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                    <span style={{ color: p.color, fontSize: "13px", fontWeight: "700" }}>{p.label}</span>
+                    <span style={{ color: dimText, fontSize: "11px" }}>{(p.rate * 100).toFixed(0)}%/yr on equities</span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+                    {[
+                      { label: "Year 7", value: fmtDollar(p.year7), color: p.color },
+                      { label: "Year 10", value: fmtDollar(p.year10), color: p.color },
+                      { label: "10yr Gain", value: fmtDollar(p.year10 - totalValue), color: green },
+                    ].map(cell => (
+                      <div key={cell.label}>
+                        <div style={{ color: muted, fontSize: "9px", textTransform: "uppercase", marginBottom: "3px" }}>{cell.label}</div>
+                        <div style={{ color: cell.color, fontSize: "14px", fontWeight: "700" }}>{cell.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Footer */}
         <div style={{ textAlign: "center", marginTop: "16px" }}>
