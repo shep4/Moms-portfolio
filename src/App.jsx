@@ -183,7 +183,7 @@ export default function App() {
   const getCardTint = (r) => {
     if (r.isMoneyMarket) return "rgba(8, 12, 24, 0.80)";
     if (r.totalGainLoss > 0) return "rgba(0, 214, 143, 0.06)";
-    if (r.totalGainLoss < 0) return "rgba(255, 77, 106, 0.06)";
+    if (r.totalGainLoss < 0) return "rgba(8, 12, 24, 0.92)";
     return "rgba(8, 12, 24, 0.80)";
   };
 
