@@ -8,6 +8,7 @@ const HOLDINGS = [
     cost: 7500.10,
     isMoneyMarket: true,
     entryPrice: 1.00,
+    dividendYield: 0.043,
   },
   {
     ticker: "VOO",
@@ -16,6 +17,7 @@ const HOLDINGS = [
     cost: 5000.00,
     isMoneyMarket: false,
     entryPrice: 691.94,
+    dividendYield: 0.013,
   },
   {
     ticker: "QQQM",
@@ -24,6 +26,7 @@ const HOLDINGS = [
     cost: 2500.00,
     isMoneyMarket: false,
     entryPrice: 303.41,
+    dividendYield: 0.006,
   },
 ];
 
@@ -62,15 +65,32 @@ const border = "#1E2A3A";
 const muted = "#4A6080";
 const dimText = "#8AA4C0";
 
+// Market hours check
+const getMarketStatus = () => {
+  const now = new Date();
+  const et = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const day = et.getDay();
+  const hours = et.getHours();
+  const minutes = et.getMinutes();
+  const time = hours * 60 + minutes;
+  if (day === 0 || day === 6) return { label: "Market Closed", color: red, sub: "Weekend" };
+  if (time >= 240 && time < 570) return { label: "Pre-Market", color: gold, sub: "4:00 AM – 9:30 AM ET" };
+  if (time >= 570 && time < 960) return { label: "Market Open", color: green, sub: "9:30 AM – 4:00 PM ET" };
+  if (time >= 960 && time < 1200) return { label: "After Hours", color: gold, sub: "4:00 PM – 8:00 PM ET" };
+  return { label: "Market Closed", color: red, sub: "Opens 9:30 AM ET" };
+};
+
 export default function App() {
   const [prices, setPrices] = useState({
-    VOO: { price: 692.23, prevClose: 692.23, change: 0, changePct: 0 },
-    QQQM: { price: 302.79, prevClose: 302.79, change: 0, changePct: 0 },
+    VOO: { price: 692.23, prevClose: 692.23, change: 0, changePct: 0, week52High: 0, week52Low: 0 },
+    QQQM: { price: 302.79, prevClose: 302.79, change: 0, changePct: 0, week52High: 0, week52Low: 0 },
   });
   const [lastUpdated, setLastUpdated] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [intelOpen, setIntelOpen] = useState(false);
+  const [pulse, setPulse] = useState(false);
+  const [marketStatus, setMarketStatus] = useState(getMarketStatus());
 
   const fetchPrices = useCallback(async () => {
     setLoading(true);
@@ -86,6 +106,8 @@ export default function App() {
       }
       setPrices(results);
       setLastUpdated(new Date());
+      setPulse(true);
+      setTimeout(() => setPulse(false), 1000);
     } catch (e) {
       setError("Live prices unavailable — showing last known values");
     } finally {
@@ -95,8 +117,9 @@ export default function App() {
 
   useEffect(() => {
     fetchPrices();
-    const id = setInterval(fetchPrices, 60000);
-    return () => clearInterval(id);
+    const priceId = setInterval(fetchPrices, 60000);
+    const marketId = setInterval(() => setMarketStatus(getMarketStatus()), 30000);
+    return () => { clearInterval(priceId); clearInterval(marketId); };
   }, [fetchPrices]);
 
   const rows = HOLDINGS.map((h) => {
@@ -109,7 +132,10 @@ export default function App() {
     const totalGainLoss = value != null ? value - h.cost : null;
     const totalGainLossPct = totalGainLoss != null ? (totalGainLoss / h.cost) * 100 : null;
     const fromEntry = price != null ? ((price - h.entryPrice) / h.entryPrice) * 100 : null;
-    return { ...h, price, value, dayChangePer, dayChangePct, dayGainLoss, totalGainLoss, totalGainLossPct, fromEntry };
+    const annualDividend = value != null ? value * h.dividendYield : null;
+    const week52High = priceData?.week52High ?? null;
+    const week52Low = priceData?.week52Low ?? null;
+    return { ...h, price, value, dayChangePer, dayChangePct, dayGainLoss, totalGainLoss, totalGainLossPct, fromEntry, annualDividend, week52High, week52Low };
   });
 
   const totalCost = HOLDINGS.reduce((s, h) => s + h.cost, 0);
@@ -117,10 +143,10 @@ export default function App() {
   const totalDayGL = rows.reduce((s, r) => s + (r.dayGainLoss ?? 0), 0);
   const totalGL = totalValue - totalCost;
   const totalGLPct = (totalGL / totalCost) * 100;
+  const totalAnnualDividend = rows.reduce((s, r) => s + (r.annualDividend ?? 0), 0);
 
   const colorVal = (n) => (n == null ? dimText : n > 0 ? green : n < 0 ? red : dimText);
 
-  // Intelligence calculations
   const vooPrice = prices.VOO.price;
   const qqqmPrice = prices.QQQM.price;
   const vusxxValue = rows[0].value ?? 7531.16;
@@ -139,11 +165,7 @@ export default function App() {
     const vusxxProjected10 = vusxxValue * Math.pow(1 + 0.043, 10);
     const equity7 = equityBase * Math.pow(1 + p.rate, 7);
     const equity10 = equityBase * Math.pow(1 + p.rate, 10);
-    return {
-      ...p,
-      year7: vusxxProjected7 + equity7,
-      year10: vusxxProjected10 + equity10,
-    };
+    return { ...p, year7: vusxxProjected7 + equity7, year10: vusxxProjected10 + equity10 };
   });
 
   const cardStyle = {
@@ -156,6 +178,13 @@ export default function App() {
     WebkitBackdropFilter: "blur(14px)",
     position: "relative",
     overflow: "hidden",
+  };
+
+  const getCardTint = (r) => {
+    if (r.isMoneyMarket) return "rgba(8, 12, 24, 0.80)";
+    if (r.totalGainLoss > 0) return "rgba(0, 214, 143, 0.06)";
+    if (r.totalGainLoss < 0) return "rgba(255, 77, 106, 0.06)";
+    return "rgba(8, 12, 24, 0.80)";
   };
 
   return (
@@ -215,6 +244,17 @@ export default function App() {
             <div style={{ color: purple, fontSize: "26px", fontWeight: "700", letterSpacing: "-0.5px", textShadow: "0 0 24px rgba(168,85,247,0.6)" }}>
               Account Overview
             </div>
+            {/* Market Status */}
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "6px" }}>
+              <div style={{
+                width: "8px", height: "8px", borderRadius: "50%",
+                background: marketStatus.color,
+                boxShadow: `0 0 6px ${marketStatus.color}`,
+                animation: marketStatus.label === "Market Open" ? "pulse 2s infinite" : "none",
+              }} />
+              <span style={{ color: marketStatus.color, fontSize: "11px", fontWeight: "700" }}>{marketStatus.label}</span>
+              <span style={{ color: dimText, fontSize: "10px" }}>· {marketStatus.sub}</span>
+            </div>
           </div>
           <div style={{ textAlign: "right" }}>
             <button
@@ -233,6 +273,8 @@ export default function App() {
                 cursor: loading ? "not-allowed" : "pointer",
                 fontFamily: "'Courier New', monospace",
                 backdropFilter: "blur(8px)",
+                boxShadow: pulse ? `0 0 20px ${green}` : "none",
+                transition: "box-shadow 0.3s ease",
               }}>
               {loading ? "UPDATING..." : "↻ REFRESH"}
             </button>
@@ -264,7 +306,7 @@ export default function App() {
           <div style={{ color: "#F0F4F8", fontSize: "38px", fontWeight: "700", letterSpacing: "-1px", marginBottom: "10px" }}>
             ${fmt(totalValue)}
           </div>
-          <div style={{ display: "flex", gap: "24px" }}>
+          <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
             <div>
               <span style={{ color: dimText, fontSize: "12px" }}>Day: </span>
               <span style={{ color: colorVal(totalDayGL), fontSize: "15px", fontWeight: "700" }}>
@@ -277,12 +319,22 @@ export default function App() {
                 {fmtDollar(totalGL)} ({fmtPct(totalGLPct)})
               </span>
             </div>
+            <div>
+              <span style={{ color: dimText, fontSize: "12px" }}>Est. Annual Div: </span>
+              <span style={{ color: green, fontSize: "15px", fontWeight: "700" }}>
+                {fmtDollar(totalAnnualDividend)}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Holdings Cards */}
         {rows.map((r) => (
-          <div key={r.ticker} style={cardStyle}>
+          <div key={r.ticker} style={{
+            ...cardStyle,
+            background: getCardTint(r),
+            border: `1px solid ${r.isMoneyMarket ? border : r.totalGainLoss > 0 ? green + "33" : r.totalGainLoss < 0 ? red + "33" : border}`,
+          }}>
             <div style={{
               position: "absolute", left: 0, top: 0, bottom: 0, width: "4px",
               background: r.isMoneyMarket ? gold : r.ticker === "VOO" ? "#3B82F6" : purple,
@@ -325,6 +377,14 @@ export default function App() {
                       <span style={{ color: dimText, fontSize: "11px" }}>From entry: </span>
                       <span style={{ color: colorVal(r.fromEntry), fontSize: "11px", fontWeight: "700" }}>
                         {fmtPct(r.fromEntry)}
+                      </span>
+                    </div>
+                  )}
+                  {!r.isMoneyMarket && r.annualDividend != null && (
+                    <div style={{ marginTop: "3px" }}>
+                      <span style={{ color: dimText, fontSize: "11px" }}>Est. div: </span>
+                      <span style={{ color: green, fontSize: "11px", fontWeight: "700" }}>
+                        {fmtDollar(r.annualDividend)}/yr
                       </span>
                     </div>
                   )}
@@ -388,12 +448,12 @@ export default function App() {
           </div>
         </div>
 
-        {/* Portfolio Intelligence — Collapsible */}
+        {/* Portfolio Intelligence */}
         <div style={{
           ...cardStyle,
           background: "rgba(8, 12, 24, 0.90)",
           border: `2px solid ${gold}`,
-          boxShadow: '0 0 12px ${gold}88, 0 0 24 ${gold}44',
+          boxShadow: `0 0 12px ${gold}88, 0 0 24px ${gold}44`,
           cursor: "pointer",
         }} onClick={() => setIntelOpen(!intelOpen)}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -403,7 +463,14 @@ export default function App() {
             <div style={{ color: gold, fontSize: "16px" }}>{intelOpen ? "▲" : "▼"}</div>
           </div>
           {!intelOpen && (
-            <div style={{ color: "#FFFFFF", fontSize: "12px", marginTop: "8px", fontWeight: "700", textDecoration: "underline", textShadow: "0 0 8px #000000, 0 0 16px #000000" }}>
+            <div style={{
+              color: "#FFFFFF",
+              fontSize: "12px",
+              marginTop: "8px",
+              fontWeight: "700",
+              textDecoration: "underline",
+              textShadow: "0 0 8px #000000, 0 0 16px #000000",
+            }}>
               Scenarios · Projections · Entry analysis — tap to expand
             </div>
           )}
@@ -440,6 +507,37 @@ export default function App() {
               ))}
             </div>
 
+            {/* Dividend Summary */}
+            <div style={{ ...cardStyle, border: `1px solid ${green}33` }}>
+              <div style={{ color: green, fontSize: "10px", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "14px", fontWeight: "700" }}>
+                Estimated Dividend Income
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "14px" }}>
+                {[
+                  { label: "Annual", value: fmtDollar(totalAnnualDividend), color: green },
+                  { label: "Monthly Est.", value: fmtDollar(totalAnnualDividend / 12), color: green },
+                  { label: "Quarterly Est.", value: fmtDollar(totalAnnualDividend / 4), color: green },
+                ].map(cell => (
+                  <div key={cell.label}>
+                    <div style={{ color: muted, fontSize: "9px", textTransform: "uppercase", marginBottom: "3px" }}>{cell.label}</div>
+                    <div style={{ color: cell.color, fontSize: "15px", fontWeight: "700" }}>{cell.value}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ borderTop: `1px solid ${border}`, paddingTop: "12px" }}>
+                {rows.filter(r => !r.isMoneyMarket).map(r => (
+                  <div key={r.ticker} style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                    <span style={{ color: dimText, fontSize: "12px" }}>{r.ticker} ({(r.dividendYield * 100).toFixed(1)}% yield)</span>
+                    <span style={{ color: green, fontSize: "12px", fontWeight: "700" }}>{fmtDollar(r.annualDividend)}/yr</span>
+                  </div>
+                ))}
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: "6px" }}>
+                  <span style={{ color: dimText, fontSize: "12px" }}>VUSXX (4.3% yield)</span>
+                  <span style={{ color: green, fontSize: "12px", fontWeight: "700" }}>{fmtDollar(rows[0].annualDividend)}/yr</span>
+                </div>
+              </div>
+            </div>
+
             {/* Downside Scenarios */}
             <div style={{ ...cardStyle, border: `1px solid ${red}33` }}>
               <div style={{ color: red, fontSize: "10px", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "14px", fontWeight: "700" }}>
@@ -471,7 +569,7 @@ export default function App() {
                 7–10 Year Projections
               </div>
               <div style={{ color: dimText, fontSize: "10px", marginBottom: "14px" }}>
-                Equity positions at rate shown · VUSXX at 4.3% · Starting from ${fmt(totalValue)}
+                Equity at rate shown · VUSXX at 4.3% · Starting ${fmt(totalValue)}
               </div>
               {projectionResults.map((p, i) => (
                 <div key={i} style={{ marginBottom: i < projectionResults.length - 1 ? "14px" : 0, paddingBottom: i < projectionResults.length - 1 ? "14px" : 0, borderBottom: i < projectionResults.length - 1 ? `1px solid ${border}` : "none" }}>
