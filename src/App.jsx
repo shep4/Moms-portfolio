@@ -392,7 +392,8 @@ export default function App() {
         <div style={{
           ...cardStyle,
           background: "rgba(8, 12, 24, 0.90)",
-          border: `1px solid ${gold}44`,
+          border: `2px solid ${gold}`,
+          boxShadow: '0 0 12px ${gold}88, 0 0 24 ${gold}44',
           cursor: "pointer",
         }} onClick={() => setIntelOpen(!intelOpen)}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -402,7 +403,7 @@ export default function App() {
             <div style={{ color: gold, fontSize: "16px" }}>{intelOpen ? "▲" : "▼"}</div>
           </div>
           {!intelOpen && (
-            <div style={{ color: dimText, fontSize: "11px", marginTop: "6px" }}>
+            <div style={{ color: "#FFFFFF", fontSize: "12px", marginTop: "8px", fontWeight: "700", textDecoration: "underline", textShadow: "0 0 8px #000000, 0 0 16px #000000" }}>
               Scenarios · Projections · Entry analysis — tap to expand
             </div>
           )}
